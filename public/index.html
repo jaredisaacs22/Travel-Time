@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Righteous&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=DM+Sans:opsz,wght@9..40,400..700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
 :root {
@@ -20,7 +20,7 @@
   --c-flight: var(--sky); --c-hotel: var(--red); --c-food: var(--yellow);
   --radius: 16px; --shadow: 3px 3px 0 var(--ink); --shadow-sm: 2px 2px 0 var(--ink);
   --header-h: 60px; --tabs-h: 68px;
-  --display: "Righteous", "Trebuchet MS", system-ui, sans-serif;
+  --display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -36,7 +36,7 @@ body {
 button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
-h1, h2, h3 { margin: 0; line-height: 1.15; font-family: var(--display); font-weight: 400; letter-spacing: .01em; }
+h1, h2, h3 { margin: 0; line-height: 1.1; font-family: var(--display); font-weight: 800; letter-spacing: -.02em; }
 .muted { color: var(--muted); }
 .small { font-size: .875rem; }
 
@@ -117,7 +117,7 @@ a.btn { text-decoration: none; color: var(--ink); white-space: nowrap; }
   outline: 2px dashed #fffaf0; outline-offset: -7px; /* perforated stamp look */
 }
 .greetings { font-family: var(--display); color: var(--teal); font-size: .95rem; letter-spacing: .14em; text-transform: uppercase; }
-.postcard h1 { font-size: 2.6rem; margin: .1rem 0 .4rem; color: var(--red); text-shadow: 2px 2px 0 var(--yellow); }
+.postcard h1 { font-size: 2.7rem; margin: .1rem 0 .4rem; color: var(--red); }
 .postcard p { margin: 0 0 1.3rem; }
 
 /* ---- App shell ---- */
@@ -127,8 +127,8 @@ a.btn { text-decoration: none; color: var(--ink); white-space: nowrap; }
   padding-top: env(safe-area-inset-top);
 }
 .topbar-inner { height: calc(var(--header-h) - 11px); display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: 0 16px; }
-.brand { font-family: var(--display); font-size: 1.45rem; color: var(--red); text-shadow: 1.5px 1.5px 0 var(--yellow); display: flex; align-items: center; gap: .35rem; white-space: nowrap; }
-.brand .ico { display: inline-block; animation: bob 3s ease-in-out infinite; text-shadow: none; }
+.brand { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; font-size: 1.45rem; color: var(--red); display: flex; align-items: center; gap: .35rem; white-space: nowrap; }
+.brand .ico { display: inline-block; animation: bob 3s ease-in-out infinite; }
 .who { display: flex; align-items: center; gap: .4rem; min-width: 0; }
 .avatar {
   flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--ink); background: var(--c, var(--teal));
@@ -171,7 +171,7 @@ main { padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom)); }
 #view-map { max-width: none; padding: 0; position: relative; }
 #map { height: calc(100dvh - var(--header-h) - var(--tabs-h) - env(safe-area-inset-bottom) - env(safe-area-inset-top)); min-height: 320px; background: #efe6d2; }
 /* Vintage paper-map look on the basemap tiles */
-#map .leaflet-tile-pane, #pick-map .leaflet-tile-pane { filter: sepia(.38) saturate(1.25) hue-rotate(-6deg) brightness(1.02) contrast(.96); }
+#map .leaflet-tile-pane, #pick-map .leaflet-tile-pane { filter: sepia(.32) saturate(.9) brightness(1.04) contrast(.94); }
 .map-empty {
   position: absolute; left: 16px; right: 16px; top: 14px; z-index: 500; margin: 0 auto; max-width: 400px;
   background: var(--card); border: 2px solid var(--ink); border-radius: 14px;
@@ -273,7 +273,7 @@ button.card:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(-
 .cmp-main { flex: 1; min-width: 0; }
 .cmp-name { font-family: var(--display); font-size: 1.2rem; overflow-wrap: anywhere; line-height: 1.2; }
 .cmp-total { text-align: right; flex: none; }
-.cmp-total b { font-family: var(--display); font-weight: 400; font-size: 1.45rem; display: block; color: var(--red); line-height: 1.1; }
+.cmp-total b { font-family: var(--display); font-weight: 800; font-size: 1.45rem; display: block; color: var(--red); line-height: 1.1; }
 .badge {
   display: inline-block; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
   padding: 3px 8px; border-radius: 6px; background: var(--yellow); color: var(--ink); border: 2px solid var(--ink);
@@ -319,7 +319,7 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
 .cost-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
 .cost-table td { padding: 8px 0; border-bottom: 2px dotted var(--hair); }
 .cost-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-.cost-table tr.total td { font-family: var(--display); font-size: 1.3rem; border-bottom: 0; color: var(--red); font-weight: 400; padding-top: 10px; }
+.cost-table tr.total td { font-family: var(--display); font-size: 1.3rem; border-bottom: 0; color: var(--red); font-weight: 800; padding-top: 10px; }
 .notes { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--paper); border: 2px solid var(--ink); border-radius: 12px; padding: 10px 12px; margin: 0 0 16px; font-size: .95rem; }
 
 .vote { display: flex; align-items: center; gap: .75rem; margin-bottom: 20px; }
@@ -351,7 +351,7 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
   display: flex; justify-content: space-between; align-items: baseline; padding: 10px 14px; margin-bottom: 12px;
   background: var(--yellow); border: 2px solid var(--ink); border-radius: 12px; box-shadow: var(--shadow-sm); font-weight: 700;
 }
-.total-preview span:last-child { font-family: var(--display); font-weight: 400; font-size: 1.3rem; }
+.total-preview span:last-child { font-family: var(--display); font-weight: 800; font-size: 1.3rem; }
 .prefix { position: relative; }
 .prefix::before { content: "$"; position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-weight: 700; }
 .prefix input { padding-left: 1.65rem; }
@@ -822,10 +822,11 @@ function setView(v) {
 for (const b of $$('.tabs button')) b.addEventListener('click', () => setView(b.dataset.view));
 
 // ---------------- Map ----------------
-const TILES = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+// OpenStreetMap's standard tiles: free, no API key, attribution required.
+const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPTS = {
-  subdomains: 'abcd', maxZoom: 18,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 };
 let map, homeLayer, markerLayer;
 function initMap() {
