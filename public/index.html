@@ -189,7 +189,7 @@ main { padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom)); }
 
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
   height: calc(var(--tabs-h) + env(safe-area-inset-bottom)); padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
   background: var(--paper); border-top: 2px solid var(--ink);
 }
@@ -204,6 +204,29 @@ main { padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom)); }
 .tabs button[data-view="map"] { --tab: #9fd6ea; }
 .tabs button[data-view="compare"] { --tab: var(--yellow); }
 .tabs button[data-view="mine"] { --tab: #f7a77e; }
+.tabs button[data-view="dates"] { --tab: #b9e4c9; }
+
+/* ---- Dates poll ---- */
+.date-when { font-family: var(--display); font-weight: 800; font-size: 1.15rem; line-height: 1.2; letter-spacing: -.01em; }
+.date-sub { font-size: .84rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.date-note { font-size: .88rem; margin-top: 4px; overflow-wrap: anywhere; }
+.tally { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--paper-2); border: 2px solid var(--ink); margin: 10px 0 8px; }
+.tally span { display: block; height: 100%; }
+.tally .y { background: var(--green); } .tally .m { background: var(--yellow); } .tally .n { background: var(--red); }
+.tally span + span { border-left: 2px solid var(--ink); }
+.answers { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: .78rem; font-weight: 700; }
+.answers .a { display: inline-flex; align-items: center; gap: 3px; }
+.answers .a.none { opacity: .45; }
+.answers .avatar { width: 22px; height: 22px; font-size: .58rem; }
+.rsvp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
+.rsvp button { min-height: 40px; padding: 0 .4rem; font-size: .85rem; }
+.rsvp button[aria-pressed="true"][data-a="yes"] { background: #c9ecd9; }
+.rsvp button[aria-pressed="true"][data-a="maybe"] { background: #fff0b8; }
+.rsvp button[aria-pressed="true"][data-a="no"] { background: #ffd4c7; }
+.card.past { opacity: .55; }
+.date-tools { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: .8rem; color: var(--muted); font-weight: 600; }
+.date-tools .del { border: 0; background: none; color: var(--muted); font-weight: 700; font-size: .8rem; padding: 4px; }
+.nights-preview { font-weight: 700; padding: 10px 14px; margin-bottom: 12px; background: #c9ecd9; border: 2px solid var(--ink); border-radius: 12px; box-shadow: var(--shadow-sm); }
 
 /* ---- Map pins ---- */
 .pin-wrap, .home-wrap { background: none; border: 0; }
@@ -463,6 +486,16 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
       <div class="list" id="compare-list"></div>
     </section>
 
+    <section id="view-dates" class="view" aria-label="Dates" hidden>
+      <div class="section-head">
+        <h2>When <span>to go</span></h2>
+        <span class="tag" id="dates-count"></span>
+      </div>
+      <div class="hint" id="dates-hint">📅 Suggest date windows that could work, then everyone answers ✅ Yes, 🤔 Maybe or ❌ No.</div>
+      <div class="list" id="dates-list"></div>
+      <div style="margin-top:16px"><button class="btn gold block" id="add-dates-btn" type="button">+ Suggest dates</button></div>
+    </section>
+
     <section id="view-mine" class="view" aria-label="My picks" hidden>
       <div class="section-head">
         <h2>My <span>picks</span></h2>
@@ -478,6 +511,7 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
   <nav class="tabs" role="tablist" aria-label="Views">
     <button role="tab" data-view="map" aria-selected="true"><span class="ico" aria-hidden="true">🗺️</span>Map</button>
     <button role="tab" data-view="compare" aria-selected="false"><span class="ico" aria-hidden="true">🎟️</span>Compare</button>
+    <button role="tab" data-view="dates" aria-selected="false"><span class="ico" aria-hidden="true">📅</span>Dates</button>
     <button role="tab" data-view="mine" aria-selected="false"><span class="ico" aria-hidden="true">🧳</span>My picks</button>
   </nav>
 </div>
@@ -560,6 +594,36 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
       <p class="error" id="editor-error" role="alert"></p>
     </div>
     <div class="sheet-foot"><button class="btn primary block" type="submit" id="editor-save">Save destination</button></div>
+  </form>
+</dialog>
+
+<!-- ============ Suggest dates ============ -->
+<dialog id="date-editor" aria-labelledby="date-editor-title">
+  <form class="sheet" id="date-form" novalidate>
+    <div class="stripes" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <h2 id="date-editor-title">Suggest dates</h2>
+      <button class="close" type="button" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="row">
+        <div class="field">
+          <label for="d-start">Leave</label>
+          <input id="d-start" type="date" required>
+        </div>
+        <div class="field">
+          <label for="d-end">Return</label>
+          <input id="d-end" type="date" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="d-note">Note (optional)</label>
+        <input id="d-note" maxlength="80" placeholder="e.g. Spring break, long weekend">
+      </div>
+      <div class="nights-preview" id="d-preview">Pick your dates</div>
+      <p class="error" id="date-error" role="alert"></p>
+    </div>
+    <div class="sheet-foot"><button class="btn primary block" type="submit" id="date-save">Add to the poll</button></div>
   </form>
 </dialog>
 
@@ -863,6 +927,7 @@ function render() {
   renderMap();
   renderCompare();
   renderMine();
+  renderDates();
   S.animateCards = false;
   if (S.openId != null && $('#detail').open) renderDetail();
 }
@@ -871,11 +936,11 @@ function render() {
 function setView(v) {
   S.view = v;
   for (const b of $$('.tabs button')) b.setAttribute('aria-selected', String(b.dataset.view === v));
-  for (const id of ['map', 'compare', 'mine']) $('#view-' + id).hidden = id !== v;
+  for (const id of ['map', 'compare', 'dates', 'mine']) $('#view-' + id).hidden = id !== v;
   if (v === 'map') requestAnimationFrame(() => map.invalidateSize());
   if (S.data && v !== 'map') {
     S.animateCards = true;
-    v === 'compare' ? renderCompare() : renderMine();
+    ({ compare: renderCompare, dates: renderDates, mine: renderMine })[v]();
     S.animateCards = false;
   }
   window.scrollTo(0, 0);
@@ -1102,6 +1167,149 @@ $('#mine-list').addEventListener('click', async (e) => {
   }
 });
 $('#add-btn').addEventListener('click', () => openEditor(null));
+
+// ---------------- Dates ----------------
+const DAY = 86400000;
+const parseDay = (iso) => new Date(iso + 'T00:00:00');
+// Local calendar dates as YYYY-MM-DD (never via toISOString, which shifts by time zone).
+const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const todayIso = () => isoDay(new Date());
+function fmtDay(iso, withYear) {
+  return parseDay(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}) });
+}
+function nightsBetween(a, b) { return Math.round((parseDay(b) - parseDay(a)) / DAY); }
+function dateLabel(o) {
+  const thisYear = new Date().getFullYear();
+  const y = parseDay(o.end_date).getFullYear() !== thisYear;
+  return o.start_date === o.end_date ? fmtDay(o.start_date, y) : `${fmtDay(o.start_date, false)} – ${fmtDay(o.end_date, y)}`;
+}
+const ANSWER_ICON = { yes: '✅', maybe: '🤔', no: '❌' };
+
+function dateTallies(o) {
+  const votes = S.data.date_votes.filter((v) => v.option_id === o.id);
+  const t = { yes: 0, maybe: 0, no: 0 };
+  for (const v of votes) t[v.answer]++;
+  return { t, votes, mine: votes.find((v) => v.traveler_id === S.me.id)?.answer || null };
+}
+
+// Best = most yes, then most maybe, then fewest no; needs at least one yes. Past windows don't count.
+function bestDateIds() {
+  const today = todayIso();
+  let best = [], bestKey = null;
+  for (const o of S.data.date_options) {
+    if (o.end_date < today) continue;
+    const { t } = dateTallies(o);
+    if (!t.yes) continue;
+    const key = [t.yes, t.maybe, -t.no];
+    const cmp = bestKey ? key.findIndex((k, i) => k !== bestKey[i]) : 0;
+    if (!bestKey || (cmp >= 0 && key[cmp] > bestKey[cmp])) { best = [o.id]; bestKey = key; }
+    else if (cmp < 0) best.push(o.id);
+  }
+  return new Set(best);
+}
+
+function renderDates() {
+  const opts = S.data.date_options || [];
+  const crew = S.data.travelers;
+  const best = bestDateIds();
+  const today = todayIso();
+  const mineCount = opts.filter((o) => o.created_by === S.me.id).length;
+  $('#dates-count').textContent = `${opts.length} option${opts.length === 1 ? '' : 's'}`;
+  $('#add-dates-btn').disabled = mineCount >= 6;
+  const unanswered = opts.filter((o) => o.end_date >= today && !dateTallies(o).mine).length;
+  $('#dates-hint').textContent = !opts.length
+    ? '📅 No dates yet. Suggest a window that could work, then everyone answers ✅ Yes, 🤔 Maybe or ❌ No.'
+    : unanswered ? `👋 You haven’t answered ${unanswered} option${unanswered === 1 ? '' : 's'} yet.` : '🙌 You’re all caught up. Suggest more windows any time.';
+  const anim = S.animateCards ? 'in' : '';
+  $('#dates-list').innerHTML = opts.map((o, i) => {
+    const { t, votes, mine } = dateTallies(o);
+    const n = crew.length || 1;
+    const nights = nightsBetween(o.start_date, o.end_date);
+    const isBest = best.has(o.id);
+    const past = o.end_date < today;
+    const pct = (k) => (t[k] / n * 100).toFixed(2) + '%';
+    const answers = crew.map((p) => {
+      const v = votes.find((x) => x.traveler_id === p.id);
+      return `<span class="a ${v ? '' : 'none'}" title="${esc(p.first)}: ${v ? v.answer : 'no answer yet'}">
+        <span class="avatar" style="--c:${colorFor(p.id)}">${esc(initials(p.first + ' ' + p.last))}</span>${v ? ANSWER_ICON[v.answer] : '…'}</span>`;
+    }).join('');
+    return `<div class="card ${anim} ${isBest ? 'cheap' : ''} ${past ? 'past' : ''}" style="--i:${i};--c:${colorFor(o.created_by)}" data-id="${o.id}">
+      <div class="date-when">${esc(dateLabel(o))}${isBest ? '<span class="badge">★ Best dates</span>' : ''}</div>
+      <div class="date-sub">${nights ? `${nights} night${nights === 1 ? '' : 's'}` : 'Day trip'} · ✅ ${t.yes} · 🤔 ${t.maybe} · ❌ ${t.no}${past ? ' · past' : ''}</div>
+      ${o.note ? `<div class="date-note">${esc(o.note)}</div>` : ''}
+      <div class="tally" aria-hidden="true">${t.yes ? `<span class="y" style="width:${pct('yes')}"></span>` : ''}${t.maybe ? `<span class="m" style="width:${pct('maybe')}"></span>` : ''}${t.no ? `<span class="n" style="width:${pct('no')}"></span>` : ''}</div>
+      <div class="answers">${answers}</div>
+      ${past ? '' : `<div class="rsvp" role="group" aria-label="Your answer">
+        ${['yes', 'maybe', 'no'].map((a) => `<button class="btn sm" type="button" data-a="${a}" aria-pressed="${mine === a}">${ANSWER_ICON[a]} ${a[0].toUpperCase() + a.slice(1)}</button>`).join('')}
+      </div>`}
+      <div class="date-tools"><span>Suggested by ${o.created_by === S.me.id ? 'you' : esc(firstName(o.created_by))}</span>
+        ${o.created_by === S.me.id ? '<button class="del" type="button" data-del-date>Remove</button>' : ''}</div>
+    </div>`;
+  }).join('') || '<div class="empty"><div class="big">📅</div><p>No dates on the table yet.</p></div>';
+}
+
+$('#dates-list').addEventListener('click', async (e) => {
+  const card = e.target.closest('[data-id]');
+  if (!card) return;
+  const id = Number(card.dataset.id);
+  const ans = e.target.closest('button[data-a]');
+  if (ans) {
+    const on = ans.getAttribute('aria-pressed') !== 'true';
+    for (const b of $$('button[data-a]', card)) b.disabled = true;
+    try {
+      await api(`dates/${id}/vote`, on ? { method: 'PUT', body: { answer: ans.dataset.a } } : { method: 'DELETE' });
+      await refresh();
+    } catch (err) { toast(err.message, true); for (const b of $$('button[data-a]', card)) b.disabled = false; }
+    return;
+  }
+  if (e.target.closest('[data-del-date]')) {
+    if (!confirm('Remove these dates from the poll? Everyone’s answers on them will be deleted.')) return;
+    try { await api('dates/' + id, { method: 'DELETE' }); toast('Dates removed'); await refresh(); } catch (err) { toast(err.message, true); }
+  }
+});
+
+function updateDatePreview() {
+  const a = $('#d-start').value, b = $('#d-end').value;
+  const p = $('#d-preview');
+  if (!a || !b) { p.textContent = 'Pick your dates'; return; }
+  if (b < a) { p.textContent = 'Return must be on or after leave'; return; }
+  const n = nightsBetween(a, b);
+  p.textContent = `${dateLabel({ start_date: a, end_date: b })} · ${n ? `${n} night${n === 1 ? '' : 's'}` : 'Day trip'}`;
+}
+$('#d-start').addEventListener('change', () => {
+  const a = $('#d-start').value;
+  $('#d-end').min = a || todayIso();
+  // Default the return to 4 nights later so a typical trip is two taps.
+  if (a && (!$('#d-end').value || $('#d-end').value < a)) { const d = parseDay(a); d.setDate(d.getDate() + 4); $('#d-end').value = isoDay(d); }
+  updateDatePreview();
+});
+$('#d-end').addEventListener('change', updateDatePreview);
+
+$('#add-dates-btn').addEventListener('click', () => {
+  $('#date-form').reset();
+  $('#d-start').min = $('#d-end').min = todayIso();
+  $('#date-error').textContent = '';
+  updateDatePreview();
+  $('#date-editor').showModal();
+});
+
+$('#date-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const start = $('#d-start').value, end = $('#d-end').value, note = $('#d-note').value.trim();
+  const err = $('#date-error');
+  if (!start || !end) { err.textContent = 'Pick a leave and return date.'; return; }
+  if (end < start) { err.textContent = 'Return must be on or after leave.'; return; }
+  if (start < todayIso()) { err.textContent = 'Pick dates in the future.'; return; }
+  const btn = $('#date-save');
+  btn.disabled = true;
+  try {
+    await api('dates', { method: 'POST', body: { start, end, note } });
+    $('#date-editor').close();
+    toast('Dates added to the poll 📅');
+    S.animateCards = true;
+    await refresh();
+  } catch (ex) { err.textContent = ex.message; } finally { btn.disabled = false; }
+});
 
 // ---------------- Dialog helpers ----------------
 for (const dlg of $$('dialog')) {
