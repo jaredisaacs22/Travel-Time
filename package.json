@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Shared group trip planner (Cloudflare Pages + D1)",
   "scripts": {
-    "dev": "wrangler pages dev",
+    "dev": "wrangler dev",
     "db:migrate:local": "wrangler d1 migrations apply travel-time-db --local",
     "db:migrate": "wrangler d1 migrations apply travel-time-db --remote",
     "seed": "node scripts/seed-allowlist.mjs"
