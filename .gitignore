@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env*
+# Private list of allowed names — never commit.
+allowlist.txt
+allowlist*.txt
+scripts/.seed-*.sql

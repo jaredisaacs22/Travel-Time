@@ -1,0 +1,24 @@
+{
+  "name": "travel-time",
+  "version": "1.0.0",
+  "description": "Shared group trip planner (Cloudflare Pages + D1)",
+  "scripts": {
+    "dev": "wrangler pages dev",
+    "db:migrate:local": "wrangler d1 migrations apply travel-time-db --local",
+    "db:migrate": "wrangler d1 migrations apply travel-time-db --remote",
+    "seed": "node scripts/seed-allowlist.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaredisaacs22/Travel-Time.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jaredisaacs22/Travel-Time/issues"
+  },
+  "homepage": "https://github.com/jaredisaacs22/Travel-Time#readme",
+  "devDependencies": {
+    "wrangler": "^4.156.0"
+  },
+  "private": true,
+  "type": "module"
+}
