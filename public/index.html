@@ -162,6 +162,15 @@ a.btn { text-decoration: none; color: var(--ink); white-space: nowrap; }
 .fare-list li { display: flex; align-items: center; gap: .5rem; font-size: .88rem; }
 .fare-list .where { color: var(--muted); font-size: .8rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fare-list b { font-variant-numeric: tabular-nums; }
+.fare-list .who { display: flex; flex-direction: column; align-items: flex-start; text-align: left; flex: 1; min-width: 0; line-height: 1.25; font-weight: 600; }
+.fare-list .who .where { max-width: 100%; font-weight: 500; }
+.fare-list .who .where { flex: none; }
+.fare-list .none { color: var(--muted); font-weight: 600; }
+.leaflet-popup-content-wrapper { background: var(--card); color: var(--ink); border: 2px solid var(--ink); border-radius: 12px; box-shadow: var(--shadow-sm); }
+.leaflet-popup-tip { background: var(--card); border: 2px solid var(--ink); box-shadow: none; }
+.leaflet-popup-content { margin: 8px 12px; font: 600 .85rem/1.35 "DM Sans", system-ui, sans-serif; }
+.home-pop b { font-family: var(--display); font-size: 1rem; font-weight: 800; }
+.home-pop .muted { font-weight: 500; }
 .pill { display: inline-block; font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 5px; border: 1.5px solid var(--ink); vertical-align: 1px; margin-left: .3rem; }
 .pill.mine { background: #c9ecd9; }
 .pill.est { background: var(--paper-2); }
@@ -226,7 +235,7 @@ main { padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom)); }
 /* Home markers: tiny on purpose so they never crowd the map */
 .home {
   position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 2px;
-  white-space: nowrap; pointer-events: none; animation: fade .6s both; animation-delay: var(--d, 0s);
+  white-space: nowrap; padding: 6px; cursor: pointer; animation: fade .6s both; animation-delay: var(--d, 0s);
 }
 .home .hi { font-size: 13px; line-height: 1; filter: drop-shadow(0 1px 0 rgba(45, 35, 25, .35)); }
 .home .hn {
@@ -681,6 +690,22 @@ function flightsUrl(dest, from = myHome()) {
   return 'https://www.google.com/travel/flights' + (q ? '?q=' + encodeURIComponent(q) : '');
 }
 
+// Great-circle miles, and a rough nonstop time (≈500 mph cruise + 30 min for taxi/climb).
+// Short hops are shown as drives instead (≈1.25× straight-line road distance at 60 mph).
+function milesBetween(aLat, aLng, bLat, bLng) {
+  const rad = (x) => x * Math.PI / 180;
+  const h = Math.sin(rad(bLat - aLat) / 2) ** 2 + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(rad(bLng - aLng) / 2) ** 2;
+  return 2 * 3958.8 * Math.asin(Math.sqrt(h));
+}
+function tripFromHome(t, d) {
+  if (!t || t.home_lat == null || t.home_lng == null) return null;
+  const mi = milesBetween(t.home_lat, t.home_lng, d.lat, d.lng);
+  const drive = mi < 300;
+  const hours = drive ? mi * 1.25 / 60 : mi / 500 + 0.5;
+  const time = hours < 1 ? '<1h' : `~${Math.round(hours)}h`;
+  return { mi, label: `${Math.round(mi).toLocaleString('en-US')} mi`, time: drive ? `${time} drive` : `${time} flight` };
+}
+
 // Flights differ by hometown, so every total is computed for the viewer: their own saved fare,
 // else (for the proposer) the fare they entered, else the proposer's fare as an estimate.
 function decorate(data) {
@@ -894,11 +919,16 @@ function renderMap() {
   const homes = (S.data.travelers || []).filter((t) => t.home_lat != null && t.home_lng != null);
   const cheap = cheapestIds();
 
-  homeLayer.clearLayers();
-  homes.forEach((t, i) => {
-    L.marker([t.home_lat, t.home_lng], { icon: homeIcon(t, S.fitted ? 0 : 0.2 + i * 0.08), interactive: false, keyboard: false, zIndexOffset: -1000 })
-      .addTo(homeLayer);
-  });
+  const homesKey = JSON.stringify([S.me.id, homes.map((t) => [t.id, t.first, t.last, t.home_label, t.home_lat, t.home_lng])]);
+  if (homesKey !== S.homesKey) {
+    S.homesKey = homesKey;
+    homeLayer.clearLayers();
+    homes.forEach((t, i) => {
+      L.marker([t.home_lat, t.home_lng], { icon: homeIcon(t, S.fitted ? 0 : 0.2 + i * 0.08), keyboard: false, zIndexOffset: -1000, title: `${t.first}'s home` })
+        .bindPopup(`<div class="home-pop"><b>🏠 ${esc(t.first)} ${esc(t.last)}${t.id === S.me.id ? ' (you)' : ''}</b><br><span class="muted">${esc(t.home_label || 'Home')}</span></div>`, { offset: [0, -4], closeButton: false })
+        .addTo(homeLayer);
+    });
+  }
 
   markerLayer.clearLayers();
   let n = 0;
@@ -998,7 +1028,7 @@ function renderCompare() {
         <div class="rank">${i + 1}</div>
         <div class="cmp-main">
           <div class="cmp-name">${esc(d.name)}${isCheap ? '<span class="badge">★ Best deal</span>' : ''}</div>
-          <div class="meta"><span class="owner">${esc(d.owner_name.split(' ')[0])}</span><span>❤️ ${d.votes}</span><span>💬 ${commentCount(d.id)}</span></div>
+          <div class="meta"><span class="owner">${esc(d.owner_name.split(' ')[0])}</span><span>❤️ ${d.votes}</span><span>💬 ${commentCount(d.id)}</span>${(() => { const r = tripFromHome(traveler(S.me.id), d); return r ? `<span>📍 ${r.label}</span>` : ''; })()}</div>
         </div>
         <div class="cmp-total"><b>${d.my_total ? money(d.my_total) : 'TBD'}</b><span class="muted small">${d.my_fare != null ? 'your fare' : 'est. fare'}</span></div>
       </div>
@@ -1091,12 +1121,17 @@ function openDetail(id) {
 
 function faresHtml(d) {
   const rows = [];
-  for (const t of S.data.travelers) {
+  // You first, then everyone else in roster order.
+  const crew = [...S.data.travelers].sort((a, b) => (b.id === S.me.id) - (a.id === S.me.id));
+  for (const t of crew) {
     const q = S.data.flight_quotes.find((x) => x.destination_id === d.id && x.traveler_id === t.id);
     const price = q ? q.price : t.id === d.owner_id && d.flight_cost ? d.flight_cost : null;
-    if (price == null) continue;
+    const trip = tripFromHome(t, d);
+    if (price == null && !trip) continue;
+    const where = [t.home_label, trip && `${trip.label} · ${trip.time}`].filter(Boolean).join(' · ');
     rows.push(`<li><span class="avatar sm" style="--c:${colorFor(t.id)}" aria-hidden="true">${esc(initials(t.first + ' ' + t.last))}</span>
-      <span>${t.id === S.me.id ? 'You' : esc(t.first)}</span><span class="where">${esc(t.home_label ? 'from ' + t.home_label : '')}</span><b>${money(price)}</b></li>`);
+      <span class="who"><span>${t.id === S.me.id ? 'You' : esc(t.first)}</span><span class="where">${esc(where)}</span></span>
+      ${price != null ? `<b>${money(price)}</b>` : '<span class="none" title="No fare saved yet">—</span>'}</li>`);
   }
   const home = myHome();
   return `<div class="fares">
