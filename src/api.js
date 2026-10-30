@@ -162,7 +162,7 @@ async function login(ctx) {
 
 async function getState(ctx, me) {
   const { env } = ctx;
-  const [dests, votes, comments, travelers] = await env.DB.batch([
+  const [dests, votes, comments, travelers, quotes] = await env.DB.batch([
     env.DB.prepare(
       `SELECT d.id, d.owner_id, t.first_display || ' ' || t.last_display AS owner_name, d.name, d.lat, d.lng,
               d.flight_cost, d.hotel_per_night, d.nights, d.food_activities, d.notes, d.created_at, d.updated_at
@@ -184,6 +184,7 @@ async function getState(ctx, me) {
       `SELECT id, first_display AS first, last_display AS last, home_label, home_lat, home_lng
        FROM travelers ORDER BY id`
     ),
+    env.DB.prepare('SELECT destination_id, traveler_id, price, updated_at FROM flight_quotes'),
   ]);
 
   const byDest = new Map();
@@ -207,6 +208,7 @@ async function getState(ctx, me) {
     destinations,
     comments: comments.results,
     travelers: travelers.results,
+    flight_quotes: quotes.results,
   });
 }
 
@@ -279,6 +281,23 @@ async function setVote(ctx, me, destId, on) {
   return json({ ok: true });
 }
 
+// A traveler's own fare from their hometown; clearing it falls back to the proposer's estimate.
+async function setMyFlight(ctx, me, destId, on) {
+  await requireDestination(ctx.env, destId);
+  if (!on) {
+    await ctx.env.DB.prepare('DELETE FROM flight_quotes WHERE destination_id = ? AND traveler_id = ?').bind(destId, me.id).run();
+    return json({ ok: true });
+  }
+  const price = cleanNumber((await readJson(ctx.request)).price, 'Flight price', { min: 0, max: 100000 });
+  await ctx.env.DB.prepare(
+    `INSERT INTO flight_quotes (destination_id, traveler_id, price, updated_at) VALUES (?1, ?2, ?3, ?4)
+     ON CONFLICT(destination_id, traveler_id) DO UPDATE SET price = excluded.price, updated_at = excluded.updated_at`
+  )
+    .bind(destId, me.id, price, Date.now())
+    .run();
+  return json({ ok: true });
+}
+
 // ---- Router -----------------------------------------------------------------
 
 async function route(ctx) {
@@ -305,6 +324,9 @@ async function route(ctx) {
     if (parts.length === 3 && c === 'comments' && method === 'POST') return addComment(ctx, me, cleanId(b));
     if (parts.length === 3 && c === 'vote' && (method === 'PUT' || method === 'DELETE')) {
       return setVote(ctx, me, cleanId(b), method === 'PUT');
+    }
+    if (parts.length === 3 && c === 'my-flight' && (method === 'PUT' || method === 'DELETE')) {
+      return setMyFlight(ctx, me, cleanId(b), method === 'PUT');
     }
   }
 
