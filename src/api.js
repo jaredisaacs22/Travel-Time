@@ -1,4 +1,4 @@
-// Trip planner API — a single Pages Function handling every /api/* route.
+// Trip planner API: handles every /api/* route (called from src/index.js).
 //
 // Identity: no accounts. The client sends the traveler's first/last name in
 // X-First-Name / X-Last-Name headers (URI-encoded) and every request — read or

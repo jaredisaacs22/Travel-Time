@@ -24,7 +24,7 @@ const prune = args.includes('--prune');
 const fileIdx = args.indexOf('--file');
 const file = path.resolve(root, fileIdx >= 0 ? args[fileIdx + 1] : 'allowlist.txt');
 
-// Must match normalizeName() in functions/api/[[path]].js.
+// Must match normalizeName() in src/api.js.
 function normalizeName(s) {
   return String(s ?? '').normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase();
 }

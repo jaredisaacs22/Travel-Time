@@ -3,7 +3,7 @@
 A shared group trip planner. Friends sign in with just their first and last name (checked against a private allowlist), pitch 2–3 destinations with cost estimates, see everything on a map, compare total cost per person, discuss, and vote.
 
 - **Frontend:** `public/index.html`, a single file. It uses Leaflet and OpenStreetMap tiles (no API key) and Nominatim for place search.
-- **API:** `functions/api/[[path]].js`, a single Cloudflare Pages Function.
+- **API:** a Cloudflare Worker (`src/index.js` routes `/api/*` to `src/api.js`, and serves everything else from `public/` as static assets).
 - **Database:** Cloudflare D1 (`travel-time-db`). The schema is in `migrations/`.
 
 ## How it works
@@ -45,11 +45,11 @@ npm run seed -- --prune  # also removes anyone not in the file (deletes their po
 npm install
 npm run db:migrate:local
 npm run seed -- --local
-npm run dev              # http://localhost:8788
+npm run dev              # http://localhost:8787
 ```
 
 ## Deploying
 
-Cloudflare Pages is connected to this repo, so every push to `main` deploys to production. Other branches get preview URLs. Bindings come from `wrangler.toml`. There is no build step, and the output directory is `public`.
+The `travel-time` Worker is connected to this repo through Workers Builds, so every push to `main` runs `npx wrangler deploy`. Bindings come from `wrangler.toml`, and there is no build step.
 
 For a schema change, add `migrations/000N_*.sql` and run `npm run db:migrate`.
