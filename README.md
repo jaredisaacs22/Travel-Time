@@ -37,6 +37,7 @@ npm install
 npx wrangler login       # one time; opens a browser
 npm run seed             # adds or updates the names in the live database
 npm run seed -- --prune  # also removes anyone not in the file (deletes their posts and votes)
+npm run seed -- --preview # seeds the separate database used by branch previews
 ```
 
 ## Local development
@@ -50,6 +51,6 @@ npm run dev              # http://localhost:8787
 
 ## Deploying
 
-The `travel-time` Worker is connected to this repo through Workers Builds, so every push to `main` runs `npx wrangler deploy`. Bindings come from `wrangler.toml`, and there is no build step.
+The `travel-time` Worker is connected to this repo through Workers Builds, so every push to `main` runs `npx wrangler deploy`. Pushes to other branches run `npx wrangler preview`, which uses a separate `travel-time-db-preview` database (see the `previews` block in `wrangler.toml`). Bindings come from `wrangler.toml`, and there is no build step.
 
 For a schema change, add `migrations/000N_*.sql` and run `npm run db:migrate`.

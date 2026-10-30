@@ -3,6 +3,7 @@
 //
 //   npm run seed                 # reads ./allowlist.txt, writes to the live (remote) DB
 //   npm run seed -- --local      # writes to the local dev DB used by `npm run dev`
+//   npm run seed -- --preview    # writes to the branch-preview DB instead of production
 //   npm run seed -- --file other.txt
 //   npm run seed -- --prune      # also REMOVE people not in the file (deletes their data)
 //
@@ -15,10 +16,10 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const DB_NAME = 'travel-time-db';
+const args = process.argv.slice(2);
+const DB_NAME = args.includes('--preview') ? 'travel-time-db-preview' : 'travel-time-db';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const args = process.argv.slice(2);
 const local = args.includes('--local');
 const prune = args.includes('--prune');
 const fileIdx = args.indexOf('--file');
