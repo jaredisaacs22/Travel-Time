@@ -1,0 +1,9 @@
+name = "travel-time"
+compatibility_date = "2026-10-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "travel-time-db"
+database_id = "e3ad7c11-cea5-4c48-b80b-ebfc8b62a3bc"
+migrations_dir = "migrations"
