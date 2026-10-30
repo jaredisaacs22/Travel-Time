@@ -5,6 +5,8 @@
 // write — is checked against the `travelers` allowlist in D1.
 
 const MAX_DESTINATIONS = 3;
+const MAX_DATE_OPTIONS_PER_PERSON = 6;
+const DATE_ANSWERS = ['yes', 'maybe', 'no'];
 const MAX_BODY_BYTES = 16 * 1024;
 
 // [requests, window seconds] per client IP.
@@ -162,7 +164,7 @@ async function login(ctx) {
 
 async function getState(ctx, me) {
   const { env } = ctx;
-  const [dests, votes, comments, travelers, quotes] = await env.DB.batch([
+  const [dests, votes, comments, travelers, quotes, dateOptions, dateVotes] = await env.DB.batch([
     env.DB.prepare(
       `SELECT d.id, d.owner_id, t.first_display || ' ' || t.last_display AS owner_name, d.name, d.lat, d.lng,
               d.flight_cost, d.hotel_per_night, d.nights, d.food_activities, d.notes, d.created_at, d.updated_at
@@ -185,6 +187,8 @@ async function getState(ctx, me) {
        FROM travelers ORDER BY id`
     ),
     env.DB.prepare('SELECT destination_id, traveler_id, price, updated_at FROM flight_quotes'),
+    env.DB.prepare('SELECT id, created_by, start_date, end_date, note, created_at FROM date_options ORDER BY start_date, end_date'),
+    env.DB.prepare('SELECT option_id, traveler_id, answer FROM date_votes'),
   ]);
 
   const byDest = new Map();
@@ -209,6 +213,8 @@ async function getState(ctx, me) {
     comments: comments.results,
     travelers: travelers.results,
     flight_quotes: quotes.results,
+    date_options: dateOptions.results,
+    date_votes: dateVotes.results,
   });
 }
 
@@ -298,6 +304,68 @@ async function setMyFlight(ctx, me, destId, on) {
   return json({ ok: true });
 }
 
+// ---- Trip dates -------------------------------------------------------------
+
+// Strict YYYY-MM-DD that round-trips (rejects 2027-02-30), returned as a UTC Date.
+function cleanDate(v, field) {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new HttpError(400, `${field} must be a date.`);
+  const d = new Date(v + 'T00:00:00Z');
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) throw new HttpError(400, `${field} isn't a real date.`);
+  return d;
+}
+
+async function createDateOption(ctx, me) {
+  const body = await readJson(ctx.request);
+  const start = cleanDate(body.start, 'Start date');
+  const end = cleanDate(body.end, 'End date');
+  const note = cleanText(body.note, 'Note', { max: 80 });
+  const day = 86400000;
+  const today = Date.now() - day; // a day of slack for time zones
+  if (start.getTime() < today) throw new HttpError(400, 'Pick dates in the future.');
+  if (start.getTime() > Date.now() + 3 * 365 * day) throw new HttpError(400, 'Pick dates within the next 3 years.');
+  if (end < start) throw new HttpError(400, 'The end date must be on or after the start date.');
+  if ((end - start) / day > 60) throw new HttpError(400, 'Keep the window to 60 days or less.');
+  const res = await ctx.env.DB.prepare(
+    `INSERT INTO date_options (created_by, start_date, end_date, note, created_at)
+     SELECT ?1, ?2, ?3, ?4, ?5
+     WHERE (SELECT COUNT(*) FROM date_options WHERE created_by = ?1) < ?6`
+  )
+    .bind(me.id, body.start, body.end, note, Date.now(), MAX_DATE_OPTIONS_PER_PERSON)
+    .run();
+  if (!res.meta.changes) throw new HttpError(409, `You can suggest up to ${MAX_DATE_OPTIONS_PER_PERSON} date windows. Remove one first.`);
+  // Suggesting dates implies they work for you.
+  await ctx.env.DB.prepare('INSERT INTO date_votes (option_id, traveler_id, answer, updated_at) VALUES (?, ?, ?, ?)')
+    .bind(res.meta.last_row_id, me.id, 'yes', Date.now())
+    .run();
+  return json({ id: res.meta.last_row_id }, 201);
+}
+
+async function deleteDateOption(ctx, me, id) {
+  const row = await ctx.env.DB.prepare('SELECT created_by FROM date_options WHERE id = ?').bind(id).first();
+  if (!row) throw new HttpError(404, 'Date option not found.');
+  if (row.created_by !== me.id) throw new HttpError(403, 'Only the person who suggested these dates can remove them.');
+  await ctx.env.DB.prepare('DELETE FROM date_options WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}
+
+async function setDateVote(ctx, me, id, on) {
+  const row = await ctx.env.DB.prepare('SELECT id FROM date_options WHERE id = ?').bind(id).first();
+  if (!row) throw new HttpError(404, 'Date option not found.');
+  if (!on) {
+    await ctx.env.DB.prepare('DELETE FROM date_votes WHERE option_id = ? AND traveler_id = ?').bind(id, me.id).run();
+    return json({ ok: true });
+  }
+  const { answer } = await readJson(ctx.request);
+  if (!DATE_ANSWERS.includes(answer)) throw new HttpError(400, 'Answer must be yes, maybe or no.');
+  await ctx.env.DB.prepare(
+    `INSERT INTO date_votes (option_id, traveler_id, answer, updated_at) VALUES (?1, ?2, ?3, ?4)
+     ON CONFLICT(option_id, traveler_id) DO UPDATE SET answer = excluded.answer, updated_at = excluded.updated_at`
+  )
+    .bind(id, me.id, answer, Date.now())
+    .run();
+  return json({ ok: true });
+}
+
 // ---- Router -----------------------------------------------------------------
 
 async function route(ctx) {
@@ -331,6 +399,14 @@ async function route(ctx) {
   }
 
   if (a === 'comments' && parts.length === 2 && method === 'DELETE') return deleteComment(ctx, me, cleanId(b));
+
+  if (a === 'dates') {
+    if (parts.length === 1 && method === 'POST') return createDateOption(ctx, me);
+    if (parts.length === 2 && method === 'DELETE') return deleteDateOption(ctx, me, cleanId(b));
+    if (parts.length === 3 && c === 'vote' && (method === 'PUT' || method === 'DELETE')) {
+      return setDateVote(ctx, me, cleanId(b), method === 'PUT');
+    }
+  }
 
   throw new HttpError(404, 'Not found.');
 }
