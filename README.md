@@ -40,6 +40,15 @@ npm run seed -- --prune  # also removes anyone not in the file (deletes their po
 npm run seed -- --preview # seeds the separate database used by branch previews
 ```
 
+### Hometowns
+
+The 🏠 markers on the map come from the optional `home_label`, `home_lat` and `home_lng` columns on `travelers`. Like the names, they live only in D1:
+
+```sh
+npx wrangler d1 execute travel-time-db --remote --command \
+  "UPDATE travelers SET home_label='Denver, CO', home_lat=39.7392, home_lng=-104.9903 WHERE first_norm='jane' AND last_norm='smith'"
+```
+
 ## Local development
 
 ```sh

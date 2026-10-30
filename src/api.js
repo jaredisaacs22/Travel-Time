@@ -162,7 +162,7 @@ async function login(ctx) {
 
 async function getState(ctx, me) {
   const { env } = ctx;
-  const [dests, votes, comments] = await env.DB.batch([
+  const [dests, votes, comments, travelers] = await env.DB.batch([
     env.DB.prepare(
       `SELECT d.id, d.owner_id, t.first_display || ' ' || t.last_display AS owner_name, d.name, d.lat, d.lng,
               d.flight_cost, d.hotel_per_night, d.nights, d.food_activities, d.notes, d.created_at, d.updated_at
@@ -179,6 +179,10 @@ async function getState(ctx, me) {
               c.body, c.created_at
        FROM comments c JOIN travelers t ON t.id = c.author_id
        ORDER BY c.created_at`
+    ),
+    env.DB.prepare(
+      `SELECT id, first_display AS first, last_display AS last, home_label, home_lat, home_lng
+       FROM travelers ORDER BY id`
     ),
   ]);
 
@@ -197,7 +201,13 @@ async function getState(ctx, me) {
       voters: vs.map((v) => v.voter_name),
     };
   });
-  return json({ me, max_destinations: MAX_DESTINATIONS, destinations, comments: comments.results });
+  return json({
+    me,
+    max_destinations: MAX_DESTINATIONS,
+    destinations,
+    comments: comments.results,
+    travelers: travelers.results,
+  });
 }
 
 async function createDestination(ctx, me) {
