@@ -68,6 +68,18 @@ input:focus-visible, textarea:focus-visible, button:focus-visible {
 .field { margin-bottom: 1rem; }
 .row { display: flex; gap: .6rem; }
 .row > * { flex: 1; min-width: 0; }
+select {
+  width: 100%; min-height: 46px; padding: .55rem 2rem .55rem .8rem; border-radius: 12px; border: 2px solid var(--ink);
+  background: #fffdf7 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232d2319' stroke-width='2'/%3E%3C/svg%3E") no-repeat right .8rem center;
+  -webkit-appearance: none; appearance: none; font-weight: 600;
+}
+select:disabled { opacity: .55; }
+.help { font-size: .8rem; color: var(--muted); margin-top: .35rem; font-weight: 500; }
+.help a { color: var(--teal); font-weight: 700; }
+.or { display: flex; align-items: center; gap: .6rem; margin: .8rem 0 .6rem; font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.or::before, .or::after { content: ""; flex: 1; border-top: 2px dashed var(--hair); }
+.lede { background: #dff1f6; border: 2px dashed var(--navy); border-radius: 12px; padding: 8px 12px; font-size: .88rem; font-weight: 500; margin-bottom: 14px; }
+a.btn { text-decoration: none; color: var(--ink); white-space: nowrap; }
 .error { color: #b8361a; font-size: .875rem; font-weight: 600; min-height: 1.2em; margin: .25rem 0 0; }
 
 /* Thin 70s stripe band */
@@ -123,6 +135,36 @@ input:focus-visible, textarea:focus-visible, button:focus-visible {
   color: #fffaf0; display: grid; place-items: center; font-size: .72rem; font-weight: 700; letter-spacing: .02em;
 }
 .avatar.sm { width: 26px; height: 26px; font-size: .66rem; }
+.avatar-btn { padding: 0; cursor: pointer; box-shadow: var(--shadow-sm); }
+
+/* Crew check-in: who has pitched so far */
+.crew { background: var(--card); border: 2px solid var(--ink); border-radius: 14px; padding: 10px 12px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.crew-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--navy); margin-bottom: 8px; }
+.crew-title b { color: var(--red); }
+.crew-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.crew-row::-webkit-scrollbar { display: none; }
+.crew-p { flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 52px; font-size: .72rem; font-weight: 700; position: relative; }
+.crew-p .nm { max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crew-p.waiting { opacity: .45; }
+.crew-p.waiting .avatar { background: var(--paper-2) !important; color: var(--muted); border-style: dashed; }
+.crew-p .ct {
+  position: absolute; top: -4px; right: 6px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 4px;
+  background: var(--yellow); border: 2px solid var(--ink); font-size: .65rem; display: grid; place-items: center;
+}
+.crew-p.me .nm { color: var(--red); }
+
+/* Per-person fares */
+.fares { background: var(--paper); border: 2px solid var(--ink); border-radius: 14px; padding: 12px; margin: 0 0 16px; }
+.fares h3 { font-size: 1.05rem; color: var(--navy); margin-bottom: 8px; }
+.fare-form { display: flex; gap: .5rem; align-items: stretch; }
+.fare-form .prefix { flex: 1; min-width: 0; }
+.fare-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.fare-list li { display: flex; align-items: center; gap: .5rem; font-size: .88rem; }
+.fare-list .where { color: var(--muted); font-size: .8rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fare-list b { font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 5px; border: 1.5px solid var(--ink); vertical-align: 1px; margin-left: .3rem; }
+.pill.mine { background: #c9ecd9; }
+.pill.est { background: var(--paper-2); }
 
 main { padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom)); }
 .view { max-width: 820px; margin: 0 auto; padding: 18px 16px; }
@@ -388,8 +430,8 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
     <div class="topbar-inner">
       <div class="brand"><span class="ico" aria-hidden="true">✈️</span>Travel Time</div>
       <div class="who">
-        <span class="avatar" id="who-avatar" aria-hidden="true"></span>
-        <button class="btn ghost sm" id="signout" type="button">Sign out</button>
+        <button class="btn gold sm" id="invite" type="button">📣 Invite</button>
+        <button class="avatar avatar-btn" id="who-avatar" type="button" aria-label="Account"></button>
       </div>
     </div>
     <div class="stripes" aria-hidden="true"></div>
@@ -404,8 +446,9 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
     <section id="view-compare" class="view" aria-label="Compare" hidden>
       <div class="section-head">
         <h2>Compare <span>trips</span></h2>
-        <span class="tag">per person</span>
+        <span class="tag">your cost</span>
       </div>
+      <div id="crew-compare"></div>
       <div class="sortbar" id="sortbar" role="toolbar" aria-label="Sort by"></div>
       <div class="legend"><span><i style="background:var(--c-flight)"></i>Flight</span><span><i style="background:var(--c-hotel)"></i>Hotel</span><span><i style="background:var(--c-food)"></i>Food &amp; fun</span></div>
       <div class="list" id="compare-list"></div>
@@ -417,6 +460,7 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
         <span class="tag" id="mine-count"></span>
       </div>
       <div class="hint" id="mine-hint" hidden></div>
+      <div id="crew-mine"></div>
       <div class="list" id="mine-list"></div>
       <div style="margin-top:16px"><button class="btn gold block" id="add-btn" type="button">+ Pitch a destination</button></div>
     </section>
@@ -460,32 +504,43 @@ dialog::backdrop { background: rgba(38, 70, 83, .45); }
       <button class="close" type="button" data-close aria-label="Close">✕</button>
     </div>
     <div class="sheet-body">
+      <p class="lede">Only the place is required. Rough guesses on cost are totally fine!</p>
       <div class="field">
-        <label for="f-name">Destination</label>
+        <label for="f-country">Where to?</label>
+        <div class="row">
+          <select id="f-country" aria-label="Country"><option value="">Pick a country…</option></select>
+          <select id="f-city" aria-label="City" disabled><option value="">Then a city…</option></select>
+        </div>
+        <div class="or">or search anywhere</div>
         <div class="row" style="flex:none">
-          <input id="f-name" maxlength="80" placeholder="e.g. Lisbon, Portugal" required style="flex:1">
+          <input id="f-name" maxlength="80" placeholder="e.g. Lisbon, Portugal" required style="flex:1" aria-label="Destination name">
           <button class="btn gold" type="button" id="f-search" style="flex:none">Find</button>
         </div>
         <div class="search-results" id="f-results"></div>
         <div id="pick-map"></div>
-        <div class="loc-status muted" id="f-loc">Tap <b>Find</b> or tap the map to drop a pin.</div>
+        <div class="loc-status muted" id="f-loc">Pick a city, tap <b>Find</b>, or tap the map to drop a pin.</div>
       </div>
       <div class="field">
-        <label for="f-flight">✈️ Flight (round trip, per person)</label>
-        <div class="prefix"><input id="f-flight" type="number" inputmode="decimal" min="0" max="100000" step="1" placeholder="0"></div>
+        <label for="f-flight">✈️ Your round-trip flight</label>
+        <div class="fare-form">
+          <div class="prefix"><input id="f-flight" type="number" inputmode="decimal" min="0" max="100000" step="1" placeholder="0"></div>
+          <a class="btn" id="f-gflights" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">Google Flights ↗</a>
+        </div>
+        <div class="help" id="f-flight-help">Check a price, then type it in.</div>
       </div>
       <div class="row">
         <div class="field">
           <label for="f-hotel">🏨 Hotel / night</label>
           <div class="prefix"><input id="f-hotel" type="number" inputmode="decimal" min="0" max="20000" step="1" placeholder="0"></div>
+          <div class="help">Your share</div>
         </div>
         <div class="field">
           <label for="f-nights">🌙 Nights</label>
-          <input id="f-nights" type="number" inputmode="numeric" min="0" max="60" step="1" placeholder="0">
+          <input id="f-nights" type="number" inputmode="numeric" min="0" max="60" step="1" placeholder="e.g. 4">
         </div>
       </div>
       <div class="field">
-        <label for="f-food">🍹 Food &amp; fun (whole trip, per person)</label>
+        <label for="f-food">🍹 Food &amp; fun (whole trip)</label>
         <div class="prefix"><input id="f-food" type="number" inputmode="decimal" min="0" max="100000" step="1" placeholder="0"></div>
       </div>
       <div class="field">
@@ -522,12 +577,86 @@ function ago(ts) {
 }
 const initials = (name) => String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
+// Popular spots for the country → city picker: "City|lat|lng" (US entries carry their state).
+const PLACES = {
+  'United States': ['Asheville, NC|35.5951|-82.5515', 'Austin, TX|30.2672|-97.7431', 'Boston, MA|42.3601|-71.0589', 'Charleston, SC|32.7765|-79.9311', 'Chicago, IL|41.8781|-87.6298', 'Denver, CO|39.7392|-104.9903', 'Honolulu, HI|21.3069|-157.8583', 'Jackson Hole, WY|43.4799|-110.7624', 'Key West, FL|24.5551|-81.78', 'Lake Tahoe, CA|39.0968|-120.0324', 'Las Vegas, NV|36.1699|-115.1398', 'Los Angeles, CA|34.0522|-118.2437', 'Maui, HI|20.7984|-156.3319', 'Miami, FL|25.7617|-80.1918', 'Napa, CA|38.2975|-122.2869', 'Nashville, TN|36.1627|-86.7816', 'New Orleans, LA|29.9511|-90.0715', 'New York, NY|40.7128|-74.006', 'Park City, UT|40.6461|-111.498', 'Portland, OR|45.5152|-122.6784', 'San Diego, CA|32.7157|-117.1611', 'San Francisco, CA|37.7749|-122.4194', 'Savannah, GA|32.0809|-81.0912', 'Scottsdale, AZ|33.4942|-111.9261', 'Seattle, WA|47.6062|-122.3321', 'Sedona, AZ|34.8697|-111.761', 'Washington, DC|38.9072|-77.0369'],
+  'Argentina': ['Buenos Aires|-34.6037|-58.3816', 'Mendoza|-32.8895|-68.8458', 'Bariloche|-41.1335|-71.3103'],
+  'Aruba': ['Oranjestad|12.5092|-70.0086'],
+  'Australia': ['Sydney|-33.8688|151.2093', 'Melbourne|-37.8136|144.9631', 'Cairns|-16.9186|145.7781'],
+  'Austria': ['Vienna|48.2082|16.3738', 'Salzburg|47.8095|13.055'],
+  'Bahamas': ['Nassau|25.0443|-77.3504', 'Exuma|23.5|-75.76'],
+  'Belize': ['San Pedro (Ambergris Caye)|17.9214|-87.9611', 'Placencia|16.5141|-88.3669'],
+  'Brazil': ['Rio de Janeiro|-22.9068|-43.1729', 'São Paulo|-23.5505|-46.6333'],
+  'Canada': ['Banff|51.1784|-115.5708', 'Montreal|45.5017|-73.5673', 'Quebec City|46.8139|-71.208', 'Toronto|43.6532|-79.3832', 'Vancouver|49.2827|-123.1207', 'Whistler|50.1163|-122.9574'],
+  'Chile': ['Santiago|-33.4489|-70.6693', 'Patagonia (Puerto Natales)|-51.7236|-72.4875'],
+  'Colombia': ['Cartagena|10.391|-75.4794', 'Medellín|6.2442|-75.5812', 'Bogotá|4.711|-74.0721'],
+  'Costa Rica': ['La Fortuna (Arenal)|10.4678|-84.6427', 'San José|9.9281|-84.0907', 'Tamarindo|10.2993|-85.8371'],
+  'Croatia': ['Dubrovnik|42.6507|18.0944', 'Split|43.5081|16.4402'],
+  'Czechia': ['Prague|50.0755|14.4378'],
+  'Denmark': ['Copenhagen|55.6761|12.5683'],
+  'Dominican Republic': ['Punta Cana|18.582|-68.4055', 'Santo Domingo|18.4861|-69.9312'],
+  'Egypt': ['Cairo|30.0444|31.2357'],
+  'France': ['Paris|48.8566|2.3522', 'Nice|43.7102|7.262', 'Lyon|45.764|4.8357', 'Bordeaux|44.8378|-0.5792'],
+  'Germany': ['Berlin|52.52|13.405', 'Munich|48.1351|11.582'],
+  'Greece': ['Athens|37.9838|23.7275', 'Santorini|36.3932|25.4615', 'Mykonos|37.4467|25.3289', 'Crete (Chania)|35.5138|24.018'],
+  'Hungary': ['Budapest|47.4979|19.0402'],
+  'Iceland': ['Reykjavík|64.1466|-21.9426'],
+  'Indonesia': ['Bali (Ubud)|-8.5069|115.2625'],
+  'Ireland': ['Dublin|53.3498|-6.2603', 'Galway|53.2707|-9.0568'],
+  'Italy': ['Rome|41.9028|12.4964', 'Florence|43.7696|11.2558', 'Venice|45.4408|12.3155', 'Amalfi Coast (Positano)|40.628|14.485', 'Milan|45.4642|9.19', 'Cinque Terre|44.1349|9.6849', 'Sicily (Palermo)|38.1157|13.3615'],
+  'Jamaica': ['Montego Bay|18.4762|-77.8939', 'Negril|18.2683|-78.3481'],
+  'Japan': ['Tokyo|35.6762|139.6503', 'Kyoto|35.0116|135.7681', 'Osaka|34.6937|135.5023'],
+  'Kenya': ['Nairobi|-1.2921|36.8219'],
+  'Mexico': ['Cabo San Lucas|22.8905|-109.9167', 'Cancún|21.1619|-86.8515', 'Mexico City|19.4326|-99.1332', 'Oaxaca|17.0732|-96.7266', 'Playa del Carmen|20.6296|-87.0739', 'Puerto Vallarta|20.6534|-105.2253', 'Tulum|20.2114|-87.4654'],
+  'Morocco': ['Marrakesh|31.6295|-7.9811'],
+  'Netherlands': ['Amsterdam|52.3676|4.9041'],
+  'New Zealand': ['Queenstown|-45.0312|168.6626', 'Auckland|-36.8485|174.7633'],
+  'Norway': ['Oslo|59.9139|10.7522', 'Bergen|60.3913|5.3221', 'Tromsø|69.6492|18.9553'],
+  'Peru': ['Cusco|-13.532|-71.9675', 'Lima|-12.0464|-77.0428'],
+  'Philippines': ['El Nido|11.1956|119.4075'],
+  'Portugal': ['Lisbon|38.7223|-9.1393', 'Porto|41.1579|-8.6291', 'Lagos (Algarve)|37.1028|-8.6731', 'Madeira (Funchal)|32.6669|-16.9241'],
+  'Puerto Rico': ['San Juan|18.4655|-66.1057'],
+  'Singapore': ['Singapore|1.3521|103.8198'],
+  'South Africa': ['Cape Town|-33.9249|18.4241'],
+  'South Korea': ['Seoul|37.5665|126.978'],
+  'Spain': ['Barcelona|41.3874|2.1686', 'Madrid|40.4168|-3.7038', 'Seville|37.3891|-5.9845', 'Ibiza|38.9067|1.4206', 'Mallorca (Palma)|39.5696|2.6502'],
+  'Switzerland': ['Zurich|47.3769|8.5417', 'Interlaken|46.6863|7.8632'],
+  'Tanzania': ['Zanzibar|-6.1659|39.2026'],
+  'Thailand': ['Bangkok|13.7563|100.5018', 'Chiang Mai|18.7883|98.9853', 'Phuket|7.8804|98.3923'],
+  'Turkey': ['Istanbul|41.0082|28.9784', 'Cappadocia|38.6431|34.8289'],
+  'Turks and Caicos': ['Providenciales|21.7738|-72.2658'],
+  'United Arab Emirates': ['Dubai|25.2048|55.2708'],
+  'United Kingdom': ['London|51.5074|-0.1278', 'Edinburgh|55.9533|-3.1883'],
+  'Vietnam': ['Hanoi|21.0278|105.8342', 'Ho Chi Minh City|10.8231|106.6297', 'Da Nang|16.0544|108.2022'],
+};
+
 // One retro color per traveler, assigned in a stable order.
 const PALETTE = ['#e4572e', '#2a9d8f', '#f28c28', '#3a8fc4', '#7aa63f', '#a05a8c', '#d9a21b', '#264653'];
 function colorFor(travelerId) {
   const list = S.data?.travelers || [];
   const i = list.findIndex((t) => t.id === travelerId);
   return PALETTE[(i < 0 ? travelerId : i) % PALETTE.length];
+}
+
+const traveler = (id) => (S.data?.travelers || []).find((t) => t.id === id);
+const firstName = (id) => traveler(id)?.first || '';
+const myHome = () => traveler(S.me?.id)?.home_label || '';
+function flightsUrl(dest, from = myHome()) {
+  const q = dest ? (from ? `Flights from ${from} to ${dest}` : `Flights to ${dest}`) : '';
+  return 'https://www.google.com/travel/flights' + (q ? '?q=' + encodeURIComponent(q) : '');
+}
+
+// Flights differ by hometown, so every total is computed for the viewer: their own saved fare,
+// else (for the proposer) the fare they entered, else the proposer's fare as an estimate.
+function decorate(data) {
+  for (const d of data.destinations) {
+    const q = data.flight_quotes.find((x) => x.destination_id === d.id && x.traveler_id === data.me.id);
+    const mine = q ? q.price : d.owner_id === data.me.id ? d.flight_cost : null;
+    d.my_fare = mine;
+    d.my_flight = mine ?? d.flight_cost;
+    d.my_total = Math.round((d.my_flight + d.hotel_per_night * d.nights + d.food_activities) * 100) / 100;
+  }
+  return data;
 }
 
 const store = {
@@ -608,13 +737,31 @@ $('#login-form').addEventListener('submit', async (e) => {
   }
 });
 
-$('#signout').addEventListener('click', () => signOut());
+$('#who-avatar').addEventListener('click', () => {
+  if (confirm(`Signed in as ${S.me.first} ${S.me.last}.\n\nSign out?`)) signOut();
+});
+
+$('#invite').addEventListener('click', async () => {
+  const url = location.origin + '/';
+  const text = 'Help pick our group trip ✈️ Pitch your dream spots and vote:';
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Travel Time', text, url }); } catch {}
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(`${text} ${url}`);
+    toast('Invite copied! Paste it in the group chat 📋');
+  } catch {
+    prompt('Copy this link for the group chat:', url);
+  }
+});
 
 function renderWho() {
   const name = `${S.me.first} ${S.me.last}`;
   const a = $('#who-avatar');
   a.textContent = initials(name);
   a.title = name;
+  a.setAttribute('aria-label', `Account: ${name}`);
   a.style.setProperty('--c', colorFor(S.me.id));
 }
 
@@ -624,6 +771,7 @@ async function enterApp() {
   initMap();
   await refresh();
   map.invalidateSize();
+  if (!myDestinations().length) setView('mine');
 }
 
 // ---------------- Data ----------------
@@ -632,7 +780,7 @@ async function refresh() {
   if (refreshing) return refreshing;
   refreshing = (async () => {
     try {
-      S.data = await api('state');
+      S.data = decorate(await api('state'));
       S.me = S.data.me;
       renderWho();
       render();
@@ -644,10 +792,10 @@ async function refresh() {
 }
 
 function cheapestIds() {
-  const ds = S.data?.destinations || [];
+  const ds = (S.data?.destinations || []).filter((d) => d.my_total > 0);
   if (!ds.length) return new Set();
-  const min = Math.min(...ds.map((d) => d.total));
-  return new Set(ds.filter((d) => d.total === min).map((d) => d.id));
+  const min = Math.min(...ds.map((d) => d.my_total));
+  return new Set(ds.filter((d) => d.my_total === min).map((d) => d.id));
 }
 
 function render() {
@@ -723,12 +871,12 @@ function renderMap() {
     S.seenPins.add(d.id);
     const isCheap = cheap.has(d.id);
     L.marker([d.lat, d.lng], {
-      icon: pinIcon(d.name.split(',')[0], shortMoney(d.total), {
+      icon: pinIcon(d.name.split(',')[0], d.my_total ? shortMoney(d.my_total) : '?', {
         cls: (isCheap ? 'cheap ' : '') + (fresh ? 'fresh' : ''),
         color: colorFor(d.owner_id),
         delay: fresh ? 0.3 + (n++) * 0.09 : 0,
       }),
-      title: `${d.name}: ${money(d.total)}`, keyboard: true, riseOnHover: true,
+      title: `${d.name}: ${d.my_total ? money(d.my_total) : 'no estimate yet'}`, keyboard: true, riseOnHover: true,
       zIndexOffset: isCheap ? 1000 : 0,
     }).on('click', () => openDetail(d.id)).addTo(markerLayer);
   }
@@ -750,7 +898,9 @@ const SORTS = [
   { key: 'food_activities', label: '🍹 Food', dir: 1 },
   { key: 'name', label: '🔤 Name', dir: 1 },
 ];
-const sortVal = (d, k) => k === 'hotel' ? d.hotel_per_night * d.nights : k === 'name' ? d.name.toLowerCase() : d[k];
+// Trips with no estimate yet ($0) sort after priced ones.
+const sortVal = (d, k) => k === 'total' ? d.my_total || Infinity : k === 'flight_cost' ? d.my_flight
+  : k === 'hotel' ? d.hotel_per_night * d.nights : k === 'name' ? d.name.toLowerCase() : d[k];
 
 function renderSortbar() {
   $('#sortbar').innerHTML = SORTS.map((s) => {
@@ -769,18 +919,34 @@ $('#sortbar').addEventListener('click', (e) => {
   S.animateCards = false;
 });
 
+function crewHtml() {
+  const counts = new Map();
+  for (const d of S.data.destinations) counts.set(d.owner_id, (counts.get(d.owner_id) || 0) + 1);
+  const crew = S.data.travelers;
+  const done = crew.filter((t) => counts.get(t.id)).length;
+  return `<div class="crew"><div class="crew-title">Crew check-in · <b>${done} of ${crew.length}</b> have pitched</div><div class="crew-row">${
+    crew.map((t) => {
+      const n = counts.get(t.id) || 0;
+      const name = `${t.first} ${t.last}`;
+      return `<div class="crew-p ${n ? '' : 'waiting'} ${t.id === S.me.id ? 'me' : ''}" title="${esc(name)}: ${n} pick${n === 1 ? '' : 's'}">
+        <span class="avatar sm" style="--c:${colorFor(t.id)}">${esc(initials(name))}</span>${n ? `<span class="ct">${n}</span>` : ''}
+        <span class="nm">${t.id === S.me.id ? 'You' : esc(t.first)}</span></div>`;
+    }).join('')}</div></div>`;
+}
+
 function commentCount(id) { return S.data.comments.filter((c) => c.destination_id === id).length; }
 
 function renderCompare() {
   renderSortbar();
+  $('#crew-compare').innerHTML = crewHtml();
   const ds = [...S.data.destinations];
   const { key, dir } = S.sort;
   ds.sort((a, b) => {
     const x = sortVal(a, key), y = sortVal(b, key);
-    return (x < y ? -1 : x > y ? 1 : 0) * dir || a.total - b.total;
+    return (x < y ? -1 : x > y ? 1 : 0) * dir || a.my_total - b.my_total;
   });
   const cheap = cheapestIds();
-  const max = Math.max(1, ...ds.map((d) => d.total));
+  const max = Math.max(1, ...ds.map((d) => d.my_total));
   const list = $('#compare-list');
   if (!ds.length) {
     list.innerHTML = `<div class="empty"><div class="big">🧳</div><p>Nothing to compare yet.<br>Pitch a spot in <b>My picks</b>!</p></div>`;
@@ -798,15 +964,15 @@ function renderCompare() {
           <div class="cmp-name">${esc(d.name)}${isCheap ? '<span class="badge">★ Best deal</span>' : ''}</div>
           <div class="meta"><span class="owner">${esc(d.owner_name.split(' ')[0])}</span><span>❤️ ${d.votes}</span><span>💬 ${commentCount(d.id)}</span></div>
         </div>
-        <div class="cmp-total"><b>${money(d.total)}</b><span class="muted small">pp</span></div>
+        <div class="cmp-total"><b>${d.my_total ? money(d.my_total) : 'TBD'}</b><span class="muted small">${d.my_fare != null ? 'your fare' : 'est. fare'}</span></div>
       </div>
       <div class="bar" aria-hidden="true">
-        ${d.flight_cost ? `<span style="width:${pct(d.flight_cost)};background:var(--c-flight)"></span>` : ''}
+        ${d.my_flight ? `<span style="width:${pct(d.my_flight)};background:var(--c-flight)"></span>` : ''}
         ${hotel ? `<span style="width:${pct(hotel)};background:var(--c-hotel)"></span>` : ''}
         ${d.food_activities ? `<span style="width:${pct(d.food_activities)};background:var(--c-food)"></span>` : ''}
       </div>
       <div class="breakdown">
-        <span><i style="background:var(--c-flight)"></i>Flight ${money(d.flight_cost)}</span>
+        <span><i style="background:var(--c-flight)"></i>Flight ${money(d.my_flight)}</span>
         <span><i style="background:var(--c-hotel)"></i>Hotel ${money(hotel)} <span class="small">(${money(d.hotel_per_night)} × ${d.nights})</span></span>
         <span><i style="background:var(--c-food)"></i>Food ${money(d.food_activities)}</span>
       </div>
@@ -830,8 +996,9 @@ function renderMine() {
   const hint = $('#mine-hint');
   hint.hidden = mine.length >= 2;
   hint.textContent = mine.length === 0
-    ? '🌎 Pitch 2–3 places you’d love to go. The crew compares costs and votes.'
-    : '👋 Add at least one more option (2–3 per person).';
+    ? `👋 Hey ${S.me.first}! Pitch 2–3 places you’d love to go. It takes about a minute, and rough guesses on cost are fine.`
+    : '🙌 Nice! Add one more option (2–3 per person).';
+  $('#crew-mine').innerHTML = crewHtml();
   const anim = S.animateCards ? 'in' : '';
   const color = colorFor(S.me.id);
   $('#mine-list').innerHTML = mine.map((d, i) => `
@@ -839,7 +1006,7 @@ function renderMine() {
       <div class="cmp-top">
         <div class="cmp-main">
           <div class="cmp-name">${esc(d.name)}</div>
-          <div class="meta"><span>${money(d.total)} pp</span><span>❤️ ${d.votes}</span><span>💬 ${commentCount(d.id)}</span></div>
+          <div class="meta"><span>${d.my_total ? money(d.my_total) : 'No estimate yet'}</span><span>❤️ ${d.votes}</span><span>💬 ${commentCount(d.id)}</span></div>
         </div>
       </div>
       <div class="actions">
@@ -886,25 +1053,52 @@ function openDetail(id) {
   $('.sheet-body', $('#detail')).scrollTop = 0;
 }
 
+function faresHtml(d) {
+  const rows = [];
+  for (const t of S.data.travelers) {
+    const q = S.data.flight_quotes.find((x) => x.destination_id === d.id && x.traveler_id === t.id);
+    const price = q ? q.price : t.id === d.owner_id && d.flight_cost ? d.flight_cost : null;
+    if (price == null) continue;
+    rows.push(`<li><span class="avatar sm" style="--c:${colorFor(t.id)}" aria-hidden="true">${esc(initials(t.first + ' ' + t.last))}</span>
+      <span>${t.id === S.me.id ? 'You' : esc(t.first)}</span><span class="where">${esc(t.home_label ? 'from ' + t.home_label : '')}</span><b>${money(price)}</b></li>`);
+  }
+  const home = myHome();
+  return `<div class="fares">
+    <h3>✈️ Flights from home</h3>
+    <form class="fare-form" id="fare-form">
+      <div class="prefix"><input id="my-fare" type="number" inputmode="decimal" min="0" max="100000" step="1"
+        placeholder="${d.my_fare != null ? '' : 'Your fare'}" value="${d.my_fare != null ? d.my_fare : ''}" aria-label="Your round-trip fare"></div>
+      <button class="btn gold" type="submit">Save</button>
+    </form>
+    <div class="help">${home ? `From ${esc(home)}.` : ''} <a href="${esc(flightsUrl(d.name))}" target="_blank" rel="noopener">Check Google Flights ↗</a>, then save what you find.</div>
+    ${rows.length ? `<ul class="fare-list">${rows.join('')}</ul>` : ''}
+  </div>`;
+}
+
 function renderDetail() {
   const d = S.data.destinations.find((x) => x.id === S.openId);
   if (!d) { $('#detail').close(); return; }
+  // Don't wipe a fare someone is typing when the 30s refresh re-renders.
+  const typing = document.activeElement?.id === 'my-fare' ? document.activeElement.value : null;
   const isCheap = cheapestIds().has(d.id);
   $('#detail-title').innerHTML = esc(d.name) + (isCheap ? '<span class="badge">★ Best deal</span>' : '');
   $('#detail-by').innerHTML = `<span class="owner" style="--c:${colorFor(d.owner_id)}">Pitched by ${esc(d.owner_name)}</span>`;
   const voters = d.voters.length ? d.voters.map((v) => v.split(' ')[0]).join(', ') : 'No votes yet. Be the first!';
+  const fareTag = d.my_fare != null ? '<span class="pill mine">yours</span>' : `<span class="pill est">${esc(firstName(d.owner_id))}’s</span>`;
   $('#detail-body').innerHTML = `
     <table class="cost-table">
-      <tr><td>✈️ Flight</td><td>${money(d.flight_cost)}</td></tr>
+      <tr><td>✈️ Flight ${fareTag}</td><td>${money(d.my_flight)}</td></tr>
       <tr><td>🏨 Hotel <span class="muted small">${money(d.hotel_per_night)} × ${d.nights} night${d.nights === 1 ? '' : 's'}</span></td><td>${money(d.hotel_per_night * d.nights)}</td></tr>
       <tr><td>🍹 Food &amp; fun</td><td>${money(d.food_activities)}</td></tr>
-      <tr class="total"><td>Total per person</td><td>${money(d.total)}</td></tr>
+      <tr class="total"><td>Your total</td><td>${d.my_total ? money(d.my_total) : 'TBD'}</td></tr>
     </table>
+    ${faresHtml(d)}
     ${d.notes ? `<p class="notes">${esc(d.notes)}</p>` : ''}
     <div class="vote">
       <button class="btn vote-btn" type="button" id="vote-btn" aria-pressed="${d.voted}"><span class="heart">${d.voted ? '❤️' : '🤍'}</span> ${d.voted ? 'Voted' : 'Vote'} · ${d.votes}</button>
       <span class="voters">${esc(voters)}</span>
     </div>`;
+  if (typing != null) { const f = $('#my-fare'); f.value = typing; f.focus(); }
   const comments = S.data.comments.filter((c) => c.destination_id === d.id);
   $('#comments-title').textContent = comments.length ? `Chatter (${comments.length})` : 'Chatter';
   $('#comment-list').innerHTML = comments.length ? comments.map((c) => `
@@ -917,6 +1111,23 @@ function renderDetail() {
       </div>
     </div>`).join('') : '<p class="muted small">No comments yet. Start the conversation!</p>';
 }
+
+$('#detail-body').addEventListener('submit', async (e) => {
+  if (e.target.id !== 'fare-form') return;
+  e.preventDefault();
+  const input = $('#my-fare');
+  const raw = input.value.trim();
+  const price = Number(raw);
+  if (raw && (!Number.isFinite(price) || price < 0)) { toast('Enter a fare of $0 or more', true); return; }
+  const btn = $('button', e.target);
+  btn.disabled = true;
+  try {
+    await api(`destinations/${S.openId}/my-flight`, raw ? { method: 'PUT', body: { price } } : { method: 'DELETE' });
+    input.blur();
+    await refresh();
+    toast(raw ? 'Fare saved ✈️ Your totals updated' : 'Fare cleared');
+  } catch (err) { toast(err.message, true); } finally { btn.disabled = false; }
+});
 
 $('#detail-body').addEventListener('click', async (e) => {
   const b = e.target.closest('#vote-btn');
@@ -983,6 +1194,35 @@ function initPickMap() {
   pickMap.on('click', (e) => setPick(e.latlng.lat, e.latlng.lng));
 }
 
+const countrySel = F('country'), citySel = F('city');
+countrySel.insertAdjacentHTML('beforeend', Object.keys(PLACES).map((c) => `<option>${esc(c)}</option>`).join(''));
+countrySel.addEventListener('change', () => {
+  const list = PLACES[countrySel.value] || [];
+  citySel.innerHTML = '<option value="">Then a city…</option>' +
+    list.map((c, i) => `<option value="${i}">${esc(c.split('|')[0])}</option>`).join('');
+  citySel.disabled = !list.length;
+  if (list.length) citySel.focus();
+});
+citySel.addEventListener('change', () => {
+  const entry = PLACES[countrySel.value]?.[Number(citySel.value)];
+  if (!entry || citySel.value === '') return;
+  const [city, lat, lng] = entry.split('|');
+  const name = countrySel.value === 'United States' || city === countrySel.value ? city : `${city}, ${countrySel.value}`;
+  F('name').value = name;
+  F('results').innerHTML = '';
+  setPick(+lat, +lng, name);
+  pickMap.setView([+lat, +lng], 6);
+  syncFlightsLink();
+});
+
+function syncFlightsLink() {
+  const dest = F('name').value.trim();
+  F('gflights').href = flightsUrl(dest);
+  const home = myHome();
+  F('flight-help').textContent = home ? `From ${home}. Check a price, then type it in.` : 'Check a price, then type it in.';
+}
+F('name').addEventListener('input', syncFlightsLink);
+
 function updateTotal() {
   const n = (id) => Math.max(0, Number(F(id).value) || 0);
   F('total').textContent = money(n('flight') + n('hotel') * Math.floor(n('nights')) + n('food'));
@@ -999,19 +1239,22 @@ function openEditor(d) {
   F('food').value = d ? d.food_activities : '';
   F('notes').value = d?.notes || '';
   F('results').innerHTML = '';
+  countrySel.value = '';
+  citySel.innerHTML = '<option value="">Then a city…</option>';
+  citySel.disabled = true;
   $('#editor-error').textContent = '';
   updateTotal();
+  syncFlightsLink();
   $('#editor').showModal();
   initPickMap();
   pickLoc = null;
   if (pickMarker) { pickMarker.remove(); pickMarker = null; }
-  F('loc').innerHTML = 'Tap <b>Find</b> or tap the map to drop a pin.';
+  F('loc').innerHTML = 'Pick a city, tap <b>Find</b>, or tap the map to drop a pin.';
   requestAnimationFrame(() => {
     pickMap.invalidateSize();
     if (d) { setPick(d.lat, d.lng, 'Current spot'); pickMap.setView([d.lat, d.lng], 5); }
     else pickMap.setView([30, -40], 1);
   });
-  if (!d) F('name').focus();
 }
 
 async function geocode() {
@@ -1033,6 +1276,7 @@ async function geocode() {
       const h = hits[Number(b.dataset.i)];
       const lat = Number(h.lat), lng = Number(h.lon);
       setPick(lat, lng, h.display_name.split(',').slice(0, 2).join(','));
+      syncFlightsLink();
       pickMap.setView([lat, lng], 6);
       F('results').innerHTML = '';
     };
@@ -1059,7 +1303,7 @@ $('#editor-form').addEventListener('submit', async (e) => {
     notes: F('notes').value,
   };
   if (!body.name) { err.textContent = 'Give the destination a name.'; F('name').focus(); return; }
-  if (!pickLoc) { err.textContent = 'Put it on the map: tap Find, or tap the map.'; return; }
+  if (!pickLoc) { err.textContent = 'Put it on the map: pick a city, tap Find, or tap the map.'; return; }
   for (const [k, label] of [['flight_cost', 'Flight cost'], ['hotel_per_night', 'Hotel per night'], ['food_activities', 'Food & fun']]) {
     if (!Number.isFinite(body[k]) || body[k] < 0) { err.textContent = `${label} must be 0 or more.`; return; }
   }
